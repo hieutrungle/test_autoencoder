@@ -122,7 +122,7 @@ data_len = make_divisible(data_len, steps_per_execution * batch_size)
 data= data[:data_len]
 data = tf.convert_to_tensor(data, dtype=tf.float32)
 data = tf.data.Dataset.from_tensor_slices(data)
-data = data.batch(batch_size)
+data = data.batch(batch_size, drop_remainder=True)
 
 ds = tf.data.Dataset.zip((data, data))
 
