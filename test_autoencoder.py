@@ -8,8 +8,8 @@ from tensorflow.python import ipu
 
 
 parser = configargparse.ArgumentParser()
-parser.add_argument('--batch_size', type=int, default=5,
-                        help="batch size. default=5")
+parser.add_argument('--batch_size', type=int, default=10,
+                        help="batch size. default=10")
 parser.add_argument('--num_ipus', type=int, default=1,
                         help="num_ipus")
 args = parser.parse_args()
@@ -92,13 +92,13 @@ def make_model():
     encoder_input = keras.Input(shape=(28, 28, 1), name="img")
     x = convolutional_block(encoder_input,40)
     x = residual_scale(x,80)
-    x = convolutional_block(x,110)
+    x = convolutional_block(x,130)
     x = residual_scale(x,160)
     encoder_output = tfa.layers.WeightNormalization(keras.layers.Conv2D(3, kernel_size=(3, 3), padding="same"))(x)
 
     x = keras.layers.Conv2DTranspose(160, 3, padding="same")(encoder_output)
     x = residual_scale(x,160)
-    x = deconvolutional_block(x, 110)
+    x = deconvolutional_block(x, 130)
     x = residual_scale(x,80)
     x = deconvolutional_block(x, 40)
     decoder_output = keras.layers.Conv2DTranspose(1, 3, padding="same")(x)
@@ -120,11 +120,12 @@ steps_per_execution = data_len // (batch_size * num_replicas)
 steps_per_execution = make_divisible(steps_per_execution, num_replicas)
 data_len = make_divisible(data_len, steps_per_execution * batch_size)
 data= data[:data_len]
+print(f"data: {data.shape}")
 data = tf.convert_to_tensor(data, dtype=tf.float32)
-data = tf.data.Dataset.from_tensor_slices(data)
-data = data.batch(batch_size, drop_remainder=True)
+# data = tf.data.Dataset.from_tensor_slices(data)
+# data = data.batch(batch_size, drop_remainder=True)
 
-ds = tf.data.Dataset.zip((data, data))
+# ds = tf.data.Dataset.zip((data, data))
 
 # Add IPU configuration
 ipu_config = ipu.config.IPUConfig()
@@ -142,6 +143,6 @@ with strategy.scope():
     model.compile('adam', 'mse', steps_per_execution=steps_per_execution)
     start_time = timeit.default_timer()
     print('\nTraining')
-    model.fit(ds, epochs=epochs, batch_size=batch_size)
+    model.fit(data, data, epochs=epochs, batch_size=batch_size)
     training_time = timeit.default_timer()-start_time
     print(f"training time: {training_time}")
