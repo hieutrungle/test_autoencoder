@@ -10,8 +10,6 @@ import timeit
 parser = configargparse.ArgumentParser()
 parser.add_argument('--batch_size', type=int, default=10,
                         help="batch size. default=10")
-parser.add_argument('--num_ipus', type=int, default=1,
-                        help="num_ipus")
 args = parser.parse_args()
 
 
